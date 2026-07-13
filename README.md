@@ -6,6 +6,25 @@ The card-count math (creature curves, keyword ranges, spell slots, and how they 
 cube's size) is based on the default design skeleton described in Mark Rosewater's article
 "Nuts & Bolts #13: Design Skeleton Revisited" (a 181-card baseline: 101 commons + 80 uncommons).
 
+## Requirements
+
+You'll need two things installed on your computer:
+
+- **Git**, to download ("clone") this repository. Installers and instructions:
+  [Git Downloads](https://git-scm.com/downloads)
+- **Python 3**, to run the scripts. Installers and instructions:
+  [Python Downloads](https://www.python.org/downloads/)
+
+Once both are installed, open a terminal (Command Prompt or PowerShell on Windows, Terminal on
+macOS/Linux) and download this repository:
+
+```
+git clone https://github.com/SteffenBlake/cube-checklist.py.git
+cd cube-checklist.py
+```
+
+Everything below assumes you're running commands from inside that `cube-checklist.py` folder.
+
 ## The two scripts
 
 1. `cube_checklist.py` - an interactive terminal tool that asks how big your cube is and what
