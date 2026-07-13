@@ -730,45 +730,81 @@ def run_tui(stdscr, initial_total=None, initial_multicolor_pct=None,
 
     cursor = 0
     action = None
+    scroll_offset = 0
 
     while True:
+        # Build the flat list of scrollable content rows fresh each frame
+        # (cheap, and keeps it in sync with any toggled checkboxes).
+        items = []
+        for i, f in enumerate(fields):
+            items.append(("field", i, f))
+        items.append(("blank", None))
+        items.append(("header", None, "Multicolor Selection:"))
+        for idx, (node, depth) in enumerate(tree_rows):
+            items.append(("tree", TREE_START + idx, node, depth))
+        items.append(("blank", None))
+        items.append(("button", GENERATE_IDX, "[ Generate ]"))
+        items.append(("button", CANCEL_IDX, "[ Cancel ]"))
+
+        cursor_row = 0
+        for row_i, it in enumerate(items):
+            if it[0] in ("field", "tree", "button") and it[1] == cursor:
+                cursor_row = row_i
+                break
+
         stdscr.erase()
         h, w = stdscr.getmaxyx()
-        row = 0
-        stdscr.addstr(row, 0, "Cube Checklist Generator".ljust(w - 1)[:w - 1], curses.A_BOLD)
-        row += 1
-        stdscr.addstr(row, 0, "Arrows/j/k: move  Enter/Space: toggle/edit  g: generate  q: cancel")
-        row += 2
 
-        for i, f in enumerate(fields):
-            attr = curses.A_REVERSE if cursor == i else curses.A_NORMAL
-            text = f"{f.label}: {f.value}"
-            if row < h - 1:
+        stdscr.addstr(0, 0, "Cube Checklist Generator".ljust(w - 1)[:w - 1], curses.A_BOLD)
+        stdscr.addstr(1, 0, "Arrows/j/k: move  Enter/Space: toggle/edit  g: generate  q: cancel"[:w - 1])
+
+        top_lines = 2
+        # Always reserve one row above and below the scrollable content for
+        # "more above"/"more below" indicators, so the layout doesn't shift
+        # depending on whether they're currently needed.
+        content_height = max(1, h - top_lines - 2)
+
+        if cursor_row < scroll_offset:
+            scroll_offset = cursor_row
+        elif cursor_row >= scroll_offset + content_height:
+            scroll_offset = cursor_row - content_height + 1
+        max_offset = max(0, len(items) - content_height)
+        scroll_offset = max(0, min(scroll_offset, max_offset))
+
+        has_more_above = scroll_offset > 0
+        has_more_below = scroll_offset + content_height < len(items)
+
+        if has_more_above:
+            indicator = "-- more above (scroll up) --"
+            stdscr.addstr(top_lines, 2, indicator[:w - 3], curses.A_DIM)
+
+        content_row_start = top_lines + 1
+        visible = items[scroll_offset:scroll_offset + content_height]
+        for screen_i, it in enumerate(visible):
+            row = content_row_start + screen_i
+            kind = it[0]
+            if kind == "field":
+                _kind, idx, f = it
+                attr = curses.A_REVERSE if cursor == idx else curses.A_NORMAL
+                text = f"{f.label}: {f.value}"
                 stdscr.addstr(row, 2, text[:w - 3], attr)
-            row += 1
-
-        row += 1
-        if row < h - 1:
-            stdscr.addstr(row, 0, "Multicolor Selection:", curses.A_UNDERLINE)
-        row += 1
-
-        for idx, (node, depth) in enumerate(tree_rows):
-            i = TREE_START + idx
-            box = "[x]" if node.checked else "[ ]"
-            attr = curses.A_REVERSE if cursor == i else curses.A_NORMAL
-            text = ("  " * depth) + box + " " + node.label
-            if row < h - 1:
+            elif kind == "header":
+                stdscr.addstr(row, 0, it[2][:w - 1], curses.A_UNDERLINE)
+            elif kind == "tree":
+                _kind, idx, node, depth = it
+                box = "[x]" if node.checked else "[ ]"
+                attr = curses.A_REVERSE if cursor == idx else curses.A_NORMAL
+                text = ("  " * depth) + box + " " + node.label
                 stdscr.addstr(row, 2, text[:w - 3], attr)
-            row += 1
+            elif kind == "button":
+                _kind, idx, label = it
+                attr = curses.A_REVERSE if cursor == idx else curses.A_NORMAL
+                stdscr.addstr(row, 2, label, attr)
+            # "blank" rows draw nothing
 
-        row += 1
-        gen_attr = curses.A_REVERSE if cursor == GENERATE_IDX else curses.A_NORMAL
-        can_attr = curses.A_REVERSE if cursor == CANCEL_IDX else curses.A_NORMAL
-        if row < h - 1:
-            stdscr.addstr(row, 2, "[ Generate ]", gen_attr)
-        row += 1
-        if row < h - 1:
-            stdscr.addstr(row, 2, "[ Cancel ]", can_attr)
+        if has_more_below:
+            indicator = "-- more below (scroll down) --"
+            stdscr.addstr(content_row_start + content_height, 2, indicator[:w - 3], curses.A_DIM)
 
         stdscr.refresh()
         key = stdscr.getch()
