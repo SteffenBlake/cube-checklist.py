@@ -59,6 +59,14 @@ Each color section has:
 Every slot is represented as a blank `- ` line. Fill each one in with the name of the card you've
 picked for that slot.
 
+See [example.md](example.md) in the root of this repo for what a generated checklist actually
+looks like before it's filled in. That example was generated for a 450-card cube, with all ten
+two-color pairs turned on (every enemy and ally dual, like Simic and Azorius, but no three-color
+wedges), and with the multicolor slice of the cube set noticeably higher than the article's
+default so each of those ten color pairs gets a healthy number of cards.
+
+### Silent Mode
+
 You can also skip the terminal UI entirely and pass everything as command-line flags, which is
 useful for scripting or quickly regenerating a checklist:
 
